@@ -35,7 +35,7 @@ Problem and Challenge:
   * by assigning zero probabilities to branches that are easily identifiable as infeasible.
   * consists in augmenting the objective function with a term that penalizes solutions for violating the problem’s constraints.
 
-#### 2. [Reinforcement Learning for Solving the Vehicle Routing Problem](https://papers.nips.cc/paper/8190-reinforcement-learning-for-solving-the-vehicle-routing-problem.pdf) - 2018
+#### 2. [Reinforcement Learning for Solving the Vehicle Routing Problem](https://papers.nips.cc/paper/8190-reinforcement-learning-for-solving-the-vehicle-routing-problem.pdf) - NeurIPS 2018
 
 > One vehicle with a limited capacity is responsible for delivering items to many geographically distributed customers with finite demands.
 
@@ -73,7 +73,7 @@ The solution can allocate the demands of a given customer into multiple routes b
 >
 > For example, in the VRP, the remaining customer demands change over time as the vehicle visits the customer nodes; or we might consider a variant in which new customers arrive or adjust their demand values over time, independent of the vehicle decisions.
 
-#### 3. [Learning to Branch in Mixed Integer Programming](https://www.aaai.org/ocs/index.php/AAAI/AAAI16/paper/download/12514/11657) - 2016
+#### 3. [Learning to Branch in Mixed Integer Programming](https://www.aaai.org/ocs/index.php/AAAI/AAAI16/paper/download/12514/11657) - AAAI 2016
 
 > Branch-and-Bound: Two of the main decisions to be made during the algorithm are node selection and variable selection.
 
@@ -135,35 +135,61 @@ $$
 >
 > Design abstractions of large-scale combinatorial optimization problems that can leverage existing state-of-the-art solvers in general purpose ways. A general framework that avoids requiring domain-specific structures/knowledge.
 
-* Decomposition-based LNS for Integer Programs
+***Learning to Optimize***
 
-  > Select a subset and use an existing solver to optimize the variables in that subset while holding all other variables fixed.
-  >
-  > Random decomposition empirically already delivers very strong performance.
+> *(i)* Learning to Search: Learning search heuristics. A collection of recent works explore learning data-driven models to outperform manually designed heuristics. 
+>
+> The most common choice is the open-source solver SCIP [1], while some previous work relied on callback methods with CPlex. However, in general, one cannot depend on highly optimized solvers being amenable to incorporating learned decision procedures as subroutines. 
+>
+> *(ii)* Algorithm Configuration: A process for tuning the hyperparameters of an existing approach. One limitation of algorithm configuration approaches is that they rely on the underlying solver being able to solve problem instances in a reasonable amount of time, which may not be possible for hard problem instances.
+>
+> *(iii)* Learning to Identify Substructures: A canonical example is learning to predict backdoor variables. Our approach bears some high-level affinity to this paradigm, as we effectively aim to learn decompositions of the original problem into a series of smaller subproblems. However, our approach makes a much weaker structural assumption, and thus can more readily leverage a broader suite of existing solvers.
+
+***Decomposition-based LNS for Integer Programs***
+
+> LNS Framework: Formally, let X be the set of all variables in an optimization problem and S be all possible value assignments of X. For a current solution s ∈ S, a neighborhood function N(s) ⊂ S is a collection of candidate solutions to replace s, afterwards a solver subroutine is evoked to find the optimal solution within N(s).
+>
+> Methodology: Defining decompositions of its integer variables into disjoint subsets. Afterwards, we can select a subset and use an existing solver to optimize the variables in that subset while holding all other variables fixed. Random decomposition empirically already delivers very strong performance.
 
 <p align="center">
   <img src="./img/4_1.png" alt="Editor" width="400"/></br>
 </p>
+***Learning a Decomposition - [Ref-IL](https://medium.com/@SmartLabAI/a-brief-overview-of-imitation-learning-8a8a75c44a9c)***
 
-* Learning a Decomposition
-
-  > *(i)* Reinforcement Learning: 
-  >
-  > State is a vector representing an assignment for variables in X, i.e., it's an incumbent solution.
-  >
-  > Action is a decomposition of X.
-  >
-  > Reward $$r(s,a) = J(s) - J(s')$$, which is the difference of obj between old and new solution.
-  >
-  > *(ii)* Imitation Learning:
-  >
-  > Generate a collection of good decompositions: by sampling random decompositions and take the ones resulting in best objectives as demonstrations. See Alg 2.
-  >
-  > Then apply behavior cloning, which treats policy learning as a supervised learning problem.
+> *(i)* Reinforcement Learning - REINFORCE: 
+>
+> State is a vector representing an assignment for variables in X, i.e., it's an incumbent solution.
+>
+> Action is a decomposition of X.
+>
+> Reward $$r(s,a) = J(s) - J(s')$$, which is the difference of obj between old and new solution.
+>
+> *(ii)* Imitation Learning:
+>
+> Generate a collection of good decompositions: by sampling random decompositions and take the ones resulting in best objectives as demonstrations. See Alg 2.
+>
+> Then apply behavior cloning, which treats policy learning as a supervised learning problem.
 
 <p align="center">
-  <img src="./img/4_2.png" alt="Editor" width="400"/></br>
+  <img src="./img/4_2.png" alt="Editor" width="500"/></br>
+	<img src="./img/4_3.png" alt="Editor" width="500"/>
 </p>
+
+***Experiment***
+
+> * Gurobi
+> * Random-LNS
+> * BC-LNS: Behavior Cloning
+> * FT-LNS: Forward Training
+> * RL-LNS: REINFORCE
+>
+> Evaluate on 4 NP-hard benchmark problems
+>
+> Per-Iteration Comparison & Running Time Comparison
+>
+> Comparison with Domain-Specific Heuristics
+>
+> Comparison with Learning to Branch Methods
 
 ### 07/13/2020
 
@@ -174,7 +200,6 @@ $$
 * Motivations: Approximation and Discovery of new policies
   * With domain-knowledge, but want to alleviate the computational burden by approximating some of decisions with ML.
   * expert knowledge is not satisfactory, and wishes to find better ways of making decisions.
-
 
 **Learning methods**
 
@@ -233,6 +258,7 @@ $$
 ><p align="center">
 ><img src="./img/5_3.png" alt="Editor" height="200"/></br>
 ></p>
+>
 >>This is clearly the context of the branch-and-bound tree for MILP.
 >>
 >>* Select the branching variable
@@ -331,14 +357,71 @@ $$
 
 ### 07/20/2020
 
-#### 6. A General Large Neighborhood Search Framework for Solving Integer Programs - 2020
+#### 6. Backdoors in the Context of Learning - 2009
 
-> 
+> Traditional backdoor is oblivious to “learning” during search -> extend to the context of learning.
+>
+> The smallest backdoors for SAT that take into account **clause learning** and **order-sensitivity of branching** can be exponentially smaller than “traditional” backdoors.
+>
+> Reference: [Conflict Driven Clause Learning(CDCL & DPLL & BCP)](https://cse442-17f.github.io/Conflict-Driven-Clause-Learning/)
+
+**Backdoor set**: a set of variables such that once they are instantiated, the remaining problem simplifies to a tractable class.
+
+Weak and Strong Backdoors for SAT:
+
+> Given a CNF formula F on variables X, a subset of variables B ⊆ X is a weak backdoor for F w.r.t. a sub-solver A if for some truth assignment τ : B → {0, 1}, A returns a satisfying assignment for F |τ . Such a subset B is a strong backdoor if for every truth assignment τ : B → {0, 1}, A returns a satisfying assignment for F|τ or concludes that F|τ is unsatisfiable.
+
+Weak backdoor sets capture the fact that a well-designed heuristic can get “lucky” and find the solution to a hard satisfiable instance if the heuristic guidance is correct even on the small fraction of variables that constitute the backdoor set. Similarly, strong backdoor sets B capture the fact that a systematic tree search procedure (such as DPLL) restricted to branching only on variables in B will successfully solve the problem, whether satisfiable or unsatisfiable. Furthermore, in this case, the tree search procedure restricted to B will succeed *independently of the order* in which it explores the search tree.
+
+Learning-Sensitive Backdoors for SAT:
+
+> Consider the unsatisfiable SAT instance, F1:
+>
+> (x∨p1), (x∨p2), (¬p1 ∨¬p2 ∨q), (¬q∨a), (¬q∨¬a∨b), (¬q∨¬a∨¬b), (¬x∨q∨r), (¬r∨a), (¬r∨¬a∨b), (¬r∨¬a∨¬b)
 
 #### 7. Backdoors to Combinatorial Optimization: Feasibility and Optimality - 2009
 
-> 
+> We show that finding a feasible solution and proving optimality are characterized by backdoors of different kinds and size.
 
-#### 8. Backdoors in the Context of Learning - 2009
+***Combine with branch-and-bound style systematic search and learning during search***
 
-> 
+> In SAT, this took the form of “clause learning” during the branch-and bound process, where new derived constraints are added to the problem upon backtracking. In MIP, this took the form of adding “cuts” and “tightening bounds” when exploring various branches during the branch-and-bound search.
+
+***Backdoor Sets for Optimization Problems***
+
+> Traditional Backdoors
+>
+> * Weak optimality backdoors
+> * Optimality-proof backdoors
+> * Strong optimality backdoors: both find an optimal solution and prove its optimality, or to show that the problem is infeasible altogether.
+>
+> Order-Sensitive Backdoors
+>
+> > It was often found that variable-value assignments at the time CPLEX finds an optimal solution during search do not necessarily act as traditional weak backdoors, i.e., feeding back the specific variable-value assignment doesn’t necessarily make the underlying sub-solver find an optimal solution. Because B&B algorithm learns information about the search space as they explore the search tree. This leads to a natural distinction between “traditional” (as defined above) and “order-sensitive” weak optimality backdoors.
+
+***Experiments***
+
+> Probability of Finding Small Backdoors
+
+<p align="center">
+<img src="./img/7_1.png" alt="Editor" height="250"/></br>
+</p>
+
+> LP Relaxations as Primal Heuristics: How a MIP solver could exploit its sub-solver to find small backdoors.
+
+Rather than sampling sets of desired cardinality by selecting variables uniformly at random, we biased the selection based on **the “fractionality” of variables in the root relaxation**. Assign a weight to each fractional variables $$f(x)=\min(|x|, |1-x|)$$, which captures the “infeasibility” of a variable, and is a well-known measure for picking branching variables in mixed integer programming. We choose a subset of size k where each variable is selected with probability proportional to its normalized weight. 
+
+One thing to note is that before solving the root LP, CPLEX applies a **pre-processing procedure** which simplifies the problem and removes some variables whose values can be trivially inferred or can be expressed as an aggregation of other variables. To evaluate whether the biased selection draws its advantage over the uniform selection solely on avoiding pre-processed variables, we evaluated the probability of selecting a backdoor set when sampling uniformly among only the discrete variables remaining after pre-processing (See Fig 4 presolve-*). These curves show that choosing uniformly among the remaining variables is more effective for finding backdoors than choosing uniformly among all discrete variables, but it is not as good as the biased selection based on the root LP relaxation.
+
+<p align="center">
+<img src="./img/7_2.png" alt="Editor" height="300"/></br>
+</p>
+
+### TODO
+
+- [x] Exact Combinatorial Optimization with Graph Convolutional Neural Networks (NeurIPS-19)
+- [x] Learning Combinatorial Optimization Algorithms over Graphs (NeurIPS-17)
+- [ ] An Efficient Graph Convolutional Network Technique for the Travelling Salesman Problem @NTU
+- [ ] ATTENTION, LEARN TO SOLVE ROUTING PROBLEMS!
+- [ ] Learning to Search in Branch-and-Bound Algorithms (NeurIPS-14)
+- [ ] Learning to Run Heuristics in Tree Search (IJCAI-17)
