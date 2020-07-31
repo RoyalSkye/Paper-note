@@ -26,7 +26,6 @@ $$
   <img src="./img/1_2.png" alt="Editor" width="600"/>
 </p>
 
-
 Problem and Challenge: 
 
 * TSP has few constraints.
@@ -416,12 +415,196 @@ One thing to note is that before solving the root LP, CPLEX applies a **pre-proc
 <p align="center">
 <img src="./img/7_2.png" alt="Editor" height="300"/></br>
 </p>
+### 07/31/2020
 
-### TODO
+#### 8. Learning Combinatorial Optimization Algorithms over Graphs (NeurIPS-17)
 
-- [x] Exact Combinatorial Optimization with Graph Convolutional Neural Networks (NeurIPS-19)
-- [x] Learning Combinatorial Optimization Algorithms over Graphs (NeurIPS-17)
-- [ ] An Efficient Graph Convolutional Network Technique for the Travelling Salesman Problem @NTU
-- [ ] ATTENTION, LEARN TO SOLVE ROUTING PROBLEMS!
-- [ ] Learning to Search in Branch-and-Bound Algorithms (NeurIPS-14)
-- [ ] Learning to Run Heuristics in Tree Search (IJCAI-17)
+>The same optimization problem is solved again and again on a regular basis, maintaining the same problem structure but differing in the data. The learned greedy policy behaves like a meta-algorithm that incrementally constructs a solution, and the action is determined by the output of a graph embedding network capturing the current state of the solution.
+
+***Recent Work***
+
+Pointer Network & Neural Combinatorial Optimization With Reinforcement Learning
+
+* Not yet effectively reflecting the combinatorial structure of graph problems;
+* Require a huge number of instances in order to learn to generalize to new ones;
+* Policy gradient is not particularly sample-efficient.
+
+***Our Work***
+
+* Adopt a *greedy* meta-algorithm design; 
+* Use a *graph embedding* network(S2V); 
+* Use fitted Q-learning to learn a greedy policy that is parametrized by the graph embedding network. In each step of the greedy algorithm, the graph embeddings are updated according to the partial solution to reflect new knowledge of the benefit of *each node* to the final objective value. In contrast, the policy gradient approach of [1] updates the model parameters only once w.r.t. the whole solution (e.g. the tour in TSP).
+
+***Combinatorial Optimization Problems***
+
+> We will focus on a popular pattern for designing approximation and heuristic algorithms, namely a greedy algorithm. A greedy algorithm will construct a solution by sequentially adding nodes to a partial solution S, based on maximizing some ***evaluation function Q*** that measures the quality of a node in the context of the current partial solution.
+>
+> We will design a powerful deep learning parameterization for the evaluation function, $$ \hat{Q}(h(S),v;\theta)$$, with parameters Θ. Intuitively, Q􏱤 should summarize the state of such a “tagged" graph G, and figure out the value of a new node if it is to be added in the context of such a graph.
+
+- Minimum Vertex Cover (MVC)
+- Maximum Cut (MAXCUT)
+- Traveling Salesman Problem (TSP)
+
+***Graph Embedding***
+
+* Structure2Vec
+
+$$
+\mu_v^{(t+1)} \gets F(x_v, \{\mu_u^{(t)}\}_{u\in N(v)}, \{w(v,u)\}_{u\in N(v)}; \Theta)
+$$
+
+* Parameterizing Q
+
+$$
+\mu_v^{(t+1)} \gets {\rm relu}(\theta_1x_v+\theta_2\sum_{u\in N(v)}\mu_u^{t}+\theta_3\sum_{u\in N(v)}{\rm relu}(\theta_4w(v,u)))
+$$
+
+$$
+\hat{Q}(h(S),v;\Theta) = \theta_5{\rm relu}([\theta_6\sum_{u\in V}\mu_u^{(T)}, \theta_7\mu_v^{(T)})])
+$$
+
+***Reinforcement learning formulation***
+
+* States: a sequence of actions (nodes) on a graph G - the state is a vector in p-dimensional space, 􏰍$$\sum_{v\in V}\mu_v$$
+* Transition: Deterministic
+* Actions: add a node $$v \in \bar{S}$$ to current partial solution $$S$$
+* Rewards: $$r(S, v) = c(h(S'), G) - c(h(S), G)$$
+* Policy: based on $$\hat{Q}$$􏱤, a deterministic greedy policy $$\pi(v|S):={\rm argmax}_{v' \in \bar{S}}\hat{Q}(h(S),v')$$
+
+<p align="center">
+<img src="./img/8_1.png" alt="Editor" height="70"/></br>
+</p>
+
+***Learning algorithm***
+
+> It is known that *off-policy* reinforcement learning algorithms such as Q-learning can be more sample efficient than their policy gradient counterparts.
+
+Standard (1-step) Q-learning: 
+$$
+(\gamma {\rm max}_{v'}\hat{Q}(h(S_{t+1}), v'; \Theta)+r(S_t,v_t) - \hat{Q}(h(S_t),v_t;\Theta))^2
+$$
+n-step Q-learning (delayed-reward):
+$$
+(\sum_{i=0}^{n-1}r(S_{t+i},v_{t+i}) + \gamma{\rm max}_{v'}\hat{Q}(h(S_{t+n}), v';\Theta) - \hat{Q}(h(S_t),v_t;\Theta))^2
+$$
+
+<p align="center">
+<img src="./img/8_2.png" alt="Editor" height="250"/></br>
+</p>
+
+***Experiments***
+
+* Structure2Vec Deep Q-learning(S2V-DQN)
+* Pointer Networks with Actor-Critic(PN-AC)
+* Baseline Algorithms: Powerful approximation or heuristic algorithms
+
+The approximation ratio of a solution S to a problem instance G: 
+$$
+R(S,G)=max(\frac{OPT(G)}{c(h(S))}, \frac{c(h(S))}{OPT(G)})
+$$
+For TSP, where the graph is essentially fully connected (graph structure is not as important), it is harder to learn a good model based on graph structure. 
+
+#### 9. Exact Combinatorial Optimization with Graph Convolutional Neural Networks (NeurIPS-19)
+
+>We propose a new graph convolutional neural network model for learning branch-and-bound variable selection policies, which leverages the natural variable-constraint bipartite graph representation of mixed-integer linear programs. We train our model via imitation learning from the strong branching expert rule.
+
+***Contributions***
+
+* We propose to encode the branching policies into a graph convolutional neural network (GCNN), which allows us to exploit the natural bipartite graph representation of MILP problems, thereby reducing the amount of manual feature engineering.
+
+* We approximate strong branching decisions by using behavioral cloning with a cross-entropy loss, a less difficult task than predicting strong branching scores [3] or rankings.
+
+  > Khalil et al. [3] and Hansknecht et al. treat it as a **ranking** problem and learn a partial ordering of the candidates produced by the expert, while Alvarez et al. treat it as a **regression** problem and learn directly the strong branching scores of the candidates. In contrast, we treat it as a **classification** problem and simply learn from the expert decisions, which allows imitation from experts that don’t rely on branching scores or orderings. 
+
+***Markov decision process formulation***
+
+State $$s_t$$ comprises the B&B tree with all past branching decisions, the best integer solution found so far, etc. The brancher then selects a variable $$a_t$$ among all fractional variables $$A(s_t)\subseteq\{1,\dots,p\}$$ at the currently focused node, according to a policy $$\pi(a_t|s_t)$$. The solver in turn extends the B&B tree, solves the two child LP relaxations, runs any internal heuristic, prunes the tree if warranted, and finally selects the next leaf node to split. We are then in a new state $$s_{t+1}$$, and the brancher is called again to take the next branching decision. 
+
+<p align="center">
+<img src="./img/9_1.png" alt="Editor" height="100"/></br>
+</p>
+
+The probability of a trajectory $$\tau=(s_0,\dots,s_T) \in \Tau$$ then depends on both the branching policy π and the remaining components of the solver.
+$$
+p_{\pi}(\tau) = p(s_0)\prod_{t=0}^{T-1}\sum_{a\in A(s_t)}\pi(a|s_t)p(s_{t+1}|s_t,a)
+$$
+***Methodology***
+
+> A natural approach to find good branching policies is reinforcement learning, with a carefully designed reward function. However, this raises several key issues: *(i)* so slow early in training as to make total training time prohibitively long; *(ii)* once the initial state corresponding to an instance is selected, the rest of the process is instance-specific, and so the Markov decision processes tend to be extremely large. **(?)**
+
+Imitation learning by minimizing the cross-entropy loss: 
+$$
+\mathcal{L}(\theta) = -\frac{1}{N}\sum_{(s,a^*)\in \mathcal{D}}\log\pi_{\theta}(a^*|s)
+$$
+
+<p align="center">
+<img src="./img/9_2.png" alt="Editor" height="200"/></br>
+</p>
+
+#### 10. An Efficient Graph Convolutional Network Technique for the Travelling Salesman Problem @NTU
+
+> We use deep Graph Convolutional Networks to build efficient TSP graph representations and output tours in a **non-autoregressive** manner via highly parallelized beam search.
+
+In contrast to autoregressive approaches, Nowak et al. [2017] trained a graph neural network in a supervised manner to directly output a tour as an **adjacency matrix**, which is converted into a feasible solution using **beam search**. Due to its one-shot nature, the model cannot condition its output on the partial tour and performs poorly for very small problem instances. Our non-autoregressive approach builds on top of this work.
+
+<p align="center">
+<img src="./img/10_1.png" alt="Editor" height="200"/></br>
+</p>
+
+***Methodology***
+
+Node: $$x_i \in [0,1]^2$$
+$$
+\alpha_i = A_1x_i+b_1
+$$
+Edge: edge Euclidean distance $$d_{ij}$$
+$$
+\beta_{ij} = A_2d_{ij}+b_2||A_3\delta_{ij}^{k-NN}
+$$
+Graph Convolution layer: $$x_i^{l=0}=\alpha_i$$ and $$e_{ij}^{l=0}=\beta_{ij}$$
+$$
+x_i^{l+1} = x_i^l + {\rm ReLU}({\rm BN}(W_i^lx_i^l+\sum_{j\sim i}\eta_{ij}^l\odot W_2^lx_j^l))
+$$
+
+$$
+\eta_{ij}^l=\frac{\sigma(e_{ij}^l)}{\sum_{j'\sim i}\sigma(e_{ij'}^l)+\varepsilon}
+$$
+
+$$
+e_{ij}^{l+1} = e_{ij}^l + {\rm ReLU}({\rm BN}(W_3^le_{ij}^l+w_4^lx_i^l+W_5^lx_j^l))
+$$
+
+As arbitrary graphs have no specific orientations (up, down, left, right), a diffusion process on graphs is consequently ***isotropic***, making all neighbors equally important. We make the diffusion process ***anisotropic*** by point-wise multiplication operations with learneable normalized edge gates $$e_{ij}^l$$ such as in [Marcheggiani and Titov, 2017].
+
+<p align="center">
+<img src="./img/10_2.png" alt="Editor" height="250"/></br>
+</p>
+
+MLP classifier:
+$$
+p_{ij}^{TSP}=MLP(e_{ij}^L)
+$$
+
+$$
+p(\pi')=\prod_{j'\sim i'\in \pi'}p_{i'j'}^{TSP}
+$$
+
+Decoding:
+
+* Greedy search
+* Beam search
+* Beam search and Shortest tour heuristic
+
+### 08/07/2020
+
+#### 11. ATTENTION, LEARN TO SOLVE ROUTING PROBLEMS (ICLR-19)
+
+>
+
+#### 12. Learning to Search in Branch-and-Bound Algorithms (NeurIPS-14)
+
+>
+
+#### 13. Learning to Run Heuristics in Tree Search (IJCAI-17)
+
+> 
