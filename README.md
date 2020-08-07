@@ -415,6 +415,7 @@ One thing to note is that before solving the root LP, CPLEX applies a **pre-proc
 <p align="center">
 <img src="./img/7_2.png" alt="Editor" height="300"/></br>
 </p>
+
 ### 07/31/2020
 
 #### 8. Learning Combinatorial Optimization Algorithms over Graphs (NeurIPS-17)
@@ -599,12 +600,191 @@ Decoding:
 
 #### 11. ATTENTION, LEARN TO SOLVE ROUTING PROBLEMS (ICLR-19)
 
+>We propose a model based on ***attention layers*** with benefits over the Pointer Network and we show how to train this model using REINFORCE with a simple baseline based on a ***deterministic greedy rollout***, which we find is more efficient than using a value function.
 >
+>Travelling Salesman Problem (TSP); Vehicle Routing Problem (VRP); Orienteering Problem (OP); Prize Collecting TSP (PCTSP); Stochastic PCTSP (SPCTSP).
 
+***Model Structure***
+$$
+p_\theta(\pi|s) = \prod_{t=1}^n p_\theta(\pi_{t}|s, \pi_{1:t-1})
+$$
+
+<p align="center">
+<img src="./img/11_1.png" alt="Editor" height="200"/></br>
+</p>
+
+Node embeddings $$h_i^{(N)}$$ and the Graph embedding $$\bar{h}^{(N)}$$: 
+
+$$
+h_i^{(0)} = W^xx_i+b^x
+$$
+
+$$
+\hat{h}_i=BN^l(h_i^{(l-1)}+MHA_i^l(h_1^{(l-1)},\dots,h_n^{(l-1)}))
+$$
+
+$$
+h_i^{(l)}=BN^l(\hat{h}_i+FF^l(\hat{h}_i))
+$$
+
+$$
+\bar{h}^{(N)}=\frac{1}{N}\sum_{i=1}^nh_i^{(N)}
+$$
+
+<p align="center">
+<img src="./img/11_4.png" alt="Editor" width="650"/></br>
+<img src="./img/11_2.png" alt="Editor" width="650"/></br>
+</p>
+Context embedding $$h_{(c)}^{(N)}$$:
+
+$$
+h_{(c)}^{(N)} = \begin{cases}[\bar{h}^{(N)}, h_{\pi_t-1}^{(N)}, h_{\pi_1}^{(N)}] & t>1 \\ [\bar{h}^{(N)}, v^l, v^f] & t=1\end{cases}
+$$
+
+$$
+q_{(c)} = W^Qh_{(c)} \quad k_i=W^Kh_i \quad v_i=W^Vh_i
+$$
+
+$$
+u_{(c)j}=\begin{cases}\frac{q_{(c)}^Tk_j}{\sqrt{d_k}} & if\space j\ne \pi_{t'} \space \forall t' < t \\ -\infty & {\rm otherwise.} \end{cases}
+$$
+
+$$
+a_{(c)j} = \frac{e^{u_{(c)j}}}{\sum_{j'}e^{u_{(c)j'}}}
+$$
+
+$$
+h_{(c)}'=\sum_j a_{(c)j}v_j
+$$
+
+$$
+h_{(c)}^{(N+1)} = MHA_{(c)}(h_1,\dots,h_n) = \sum_{m=1}^M W^O_mh_{(c)m}'
+$$
+
+Calculation of log-probabilities:
+$$
+ u_{(c)j}=\begin{cases}C\cdot{\rm tanh}\left(\frac{q_{(c)}^Tk_j}{\sqrt{d_k}}\right) & if\space j\ne \pi_{t'} \space \forall t' < t \\ -\infty & {\rm otherwise.} \end{cases}
+$$
+
+$$
+p_i=p_\theta(\pi_t=i|s,\pi_{1:t-1})=\frac{e^{u_{(c)i}}}{\sum_{j}e^{u_{(c)j}}}
+$$
+
+***REINFORCE With Greedy Rollout Baseline***
+$$
+\nabla \mathcal{L}(\theta|s) = \mathbb{E}_{p_{\theta}(\pi|s)}[(L(\pi)-b(s)) \nabla\log p_\theta(\pi|s)]
+$$
+
+baseline example:
+
+$$
+b(s) = M \gets \beta M+(1-\beta)L(\pi) \qquad L(\theta_v) = \frac{1}{B}\sum_{i=1}^B||b_{\theta_v}(s_i) - L(\pi_i|s_i)||_2^2
+$$
+
+We propose to use a rollout baseline in a way that is similar to self-critical training: $$b(s)$$ is the cost of a solution from a *deterministic greedy rollout* of the policy defined by the best model so far.
+
+<p align="center">
+<img src="./img/11_3.png" alt="Editor" height="200"/></br>
+</p>
+***Experiments***
+
+<p align="center">
+<img src="./img/11_5.png" alt="Editor" width=500"/></br>
+</p>
 #### 12. Learning to Search in Branch-and-Bound Algorithms (NeurIPS-14)
 
->
+>We address the key challenge of learning an ***adaptive node searching order*** for any class of problem solvable by branch-and-bound. Our strategies are learned by ***imitation learning***.
+
+***Branch-and-Bound Framework***
+
+<p align="center">
+<img src="./img/12_1.png" alt="Editor" height="200"/></br>
+Using branch-and-bound to solve an integer linear programming minimization.
+</p>
+***Learning Control Policies for Branch-and-Bound***
+
+The <u>node selection policy</u> $$\pi_S$$ determines the priorities used. Once the highest-priority node is popped, the <u>node pruning policy</u> $$\pi_P$$ decides whether to discard or expand it given the current progress of the solver. This process continues iteratively until the tree is empty or the gap reaches some specified tolerance.
+
+**Oracle**: The node selection oracle $$\pi_S^*$$ will always expand the node whose feasible set contains the optimal solution. We call such a node an <u>optimal node</u>. For example, in Figure 1, the oracle knows beforehand that the optimal solution is x = 1, y = 2, thus it will only search along edges $$y\ge2$$ and $$ x\le1$$; the optimal nodes are shown in red circles. All other non-optimal nodes are fathomed by the node pruning oracle $$\pi_P^*$$, if not already fathomed by standard rules. 
+
+**Imitation Learning (DAgger)**: 
+
+State: the whole tree of nodes visited so far, with the bounds computed at these nodes.
+
+Action: 
+
+* node selection policy $$\pi_S$$: select node $$\mathcal{F}_i: \mathcal{F}_i \in queue \space of \space active \space nodes$$
+
+* node pruning policy $$\pi_P$$: a binary classifier that predicts a class in $$\{prune, expand\}$$
+
+Score: A generic node selection policy assigns a score to each active node and pops the highest-scoring one.
+$$
+\pi_S(s_t) = argmax_{\mathcal{F_i \in L}} w^T\phi(\mathcal{F}_i)
+$$
+
+> SCIP’s default node selection strategy switches between DFS and best-first search according a plunging depth computed online. DFS uses a node’s depth as its score; best-bound-first search uses a node’s lower bound as its score.
+
+<p align="center">
+<img src="./img/12_2.png" alt="Editor" width="550"/></br>
+<img src="./img/12_3.png" alt="Editor" width="550"/>
+</p>
 
 #### 13. Learning to Run Heuristics in Tree Search (IJCAI-17)
 
-> 
+> In this work, we study the problem of deciding at which node a heuristic should be run, such that the overall (primal) performance of the solver is optimized. 
+
+***Introduction***
+
+To use the terminology of MIP, <u>the primal side</u>(focused) refers to the quest for good feasible solutions, whereas the dual side refers to the search for a proof of optimality.
+
+**Primal heuristics** are incomplete, bounded-time procedures that attempt to find a good feasible solution. Primal heuristics may be used as standalone methods, taking in a MIP instance as input, and attempting to find good feasible solutions, or as sub-routines inside branch-and-bound, where they are called periodically during the search. In this work, we focus on the latter.
+
+Our Problem Setting: ***When and what heuristics*** should be run during the search?
+
+***Primal Integral - primal performance criterion***
+
+Let $x^*$ denote an optimal (or best known) solution; $\tilde{x}$ denote a feasible solution; The *primal gap* $\gamma \in [0,1]$ of solution $\tilde{x}$ is defined as:
+$$
+\gamma(\tilde{x}) = \begin{cases} 0, & if\space |c^Tx^*|=|c^T\tilde{x}|=0 \\
+1, & if \space c^Tx^*\cdot c^T\tilde{x}<0 \\
+\frac{|c^Tx^*-c^T\tilde{x}|}{\max\{|c^Tx^*|,|c^T\tilde{x}|\}}, & {\rm otherwise.}
+\end{cases}
+$$
+
+$$
+p(t):=\begin{cases}1,& {\rm if \space no \space incumbent\space is\space found\space until\space point}\space t, \\
+\gamma(\tilde{x}(t)), & {\rm with}\space\tilde{x}(t)\space {\rm the\space incumbent\space at\space point}\space t.
+\end{cases}
+$$
+
+The *primal integral* $P(T)$ of a branch-and-bound run until a point in time $T \in [0,t_{max}]$ is defined as:
+$$
+P(T):=\sum_{i=1}^{Inc+1}p(t_{i-1})\cdot(t_i-t_{i-1})
+$$
+
+<p align="center">
+<img src="./img/13_1.png" alt="Editor" height="200"/></br>
+</p>
+
+The ***smaller*** $P(t_{max})$ is, the better the incumbent finding. As such, we will consider optimizing the *primal integral* directly, by means of making good decisions regarding whether a primal heuristic should be run at each node or not.
+
+***Problem Formulation***
+
+Primal Integral Optimization (PIO): Given a primal heuristic $H$, a branch-and-bound MIP solver with search tree $\mathcal{T}$ and a time cut-off $t_{max}$, find the subset of nodes of $\mathcal{T}$ at which executing $H$ results in a primal integral $P(t_{max})$of minimum value.
+
+Two main settings:
+
+* the *offline* setting, where the search tree T is *fixed and known* in advance, and PIO amounts to finding the best subset of nodes to run H at in hindsight;
+
+* the *online* setting, where one must sequentially decide, at each node, whether H should be run, without any knowledge of the remainder of the tree or search.
+
+***Logistic Regression***
+
+Oracle Learning: 
+
+* The model $W_H$ is simply a weight vector for the node features, such that the dot product $<w_H , x^N>$ between $w_H$ and node N ’s feature vector $x^N$ gives an estimate of the probability that heuristic H finds an incumbent at N. 
+
+MIP Solving:
+
+* We use the learned oracles in conjunction with the Run-When-Successful (RWS) rule to guide the decisions as to whether each of the ten heuristics should be run at each node.
+
