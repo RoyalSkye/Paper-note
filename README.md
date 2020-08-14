@@ -2,7 +2,7 @@
 
 #### 1. [Neural Combinatorial Optimization With Reinforcement Learning](https://arxiv.org/pdf/1611.09940) - 2016
 
-> Pointer Network + Attention + RL to solve TSP problem.
+> Pointer Network + Attention + RL to solve TSP 20/50/100 problem.
 
 Sequence to sequence problems like machine translation. But the vanilla sequence to sequence model (Encoder-decoder) has an issue: networks trained in this fashion cannot generalize to inputs with more than n cities.
 
@@ -94,7 +94,6 @@ Two of the main decisions to be made during B&B:
   <img src="./img/3_1.png" alt="Editor" width="500"/></br>
   Branch-and-Bound
 </p>
-
 **Learn branching strategies directly from data. (data-driven, on-the-fly design of variable selection strategies)**
 
 > A machine learning (ML) framework for **variable selection** in MIP. It observes the decisions made by Strong Branching (SB), a time-consuming strategy that produces small search trees, collecting features that characterize the candidate branching variables at each node of the tree. 
@@ -691,6 +690,7 @@ We propose to use a rollout baseline in a way that is similar to self-critical t
 <p align="center">
 <img src="./img/11_5.png" alt="Editor" width=500"/></br>
 </p>
+
 #### 12. Learning to Search in Branch-and-Bound Algorithms (NeurIPS-14)
 
 >We address the key challenge of learning an ***adaptive node searching order*** for any class of problem solvable by branch-and-bound. Our strategies are learned by ***imitation learning***.
@@ -788,3 +788,96 @@ MIP Solving:
 
 * We use the learned oracles in conjunction with the Run-When-Successful (RWS) rule to guide the decisions as to whether each of the ten heuristics should be run at each node.
 
+### 08/14/2020
+
+#### Review
+
+***Recent Work***
+
+* Branch and Bound (with solver): [3, 9, 12, 13]
+* Solve Directly (without solver): [1, 2, 8, 10, 11]
+  * TSP: [1, 8, 10, 11]
+  * (C)VRP: [2, 11]
+* LNS (with solver): [4]
+* Other: [5, 6, 7]
+
+***Motivation***
+
+Solve difficult & large instances in appropriate wall-clock time, and a better result than [1, 2, 8, 10, 11]. ~~With respect to small/easy instance.~~
+
+> Combined with LNS heuristic (Relatedness, Worst, Randomness) to solve large MILP problem - VRP-related Problem in Large Scale instances. Learn a problem-specific model. 
+
+***Dataset***
+
+* Random_LNS [4]:
+
+Any problem can be formulated as `MILP`, e.g. TSP.
+
+[4] - MVC, MAXCUT, combinatorial auctions and risk-aware path planning.
+
+* Vehicle_LNS:
+
+Standard `VRP` benchmark; (CVRP; SDVRP; CVRPTW;)
+
+[2] - `CVRP`
+
+> the node locations and demands are randomly generated from a fixed distribution.
+
+[11] - `CVRP`, `SDVRP`
+
+> We implement the datasets described by [2] and compare against their Reinforcement Learning (RL) framework and the strongest baselines they report. 
+
+Other - [CVPRTW@Cainiao AI](https://github.com/rogalski-wmii-uni-lodz-pl/vrp-benchmarks)
+
+***Methodology***
+
+**Random LNS**
+
+> Already done in [4].
+
+**Vehicle LNS**
+
+Constraints: mask[2, 11] for capacity constraints. Exact solver (formulation) 
+
+Feature[4]: Adjacency matrix [cons, vars] $\xrightarrow{e.g. PCA}$ [dim, vars] + Current solution
+
+Train
+
+* Imitation Learning (supervised)[4]: output the prob of selection of each variables
+
+  > [4] - Behavior cloning; Forward training
+  >
+  > Imitation Learning: Demonstration of the best heuristic (Vehicle LNS)
+
+* RL: parametrize Q(s, x)[8]; Learn worst or other heuristics, given relatedness and randomness.
+
+  > State $s$: Formulation + Current solution
+  >
+  > Action $a$: Pick a subset of variables (greedy/sampling)
+  >
+  > Transition: $\mathcal{P}_{ss'}^a=\mathbb{P}[S_{t+1}=s'|S_t=s,A_t=a]$ decided by solver
+  >
+  > Reward $r$: $r(s,a)=obj(s)-obj(s')$
+  >
+  > Trajectory: $(s_0,a_0,\cdots,s_{T-1},a_{T-1},s_T)$
+
+* Generalization: Can we parametrize `Relatedness`[1998 LNS] in order to solve all kinds of MILP? or learn the relatedness through the training process. In large scale dataset, there're millions of binary decision variables. 
+
+***Comparison***
+
+Criteria: Optimality
+
+Compare time with state-of-the-art solver.
+
+Compare solution quality with [1, 2, 8, 10, 11] on large scale dataset.
+
+***Challenge***
+
+> 1. Self-supervised Learning
+> 2. Feature Representation
+>
+> 3. Relatedness
+
+***Others***
+
+* Interpretability: B&B recursively divides the feasible set of a problem into disjoint subsets, organized in a tree structure, where each node represents a subproblem that searches only the subset at that node.
